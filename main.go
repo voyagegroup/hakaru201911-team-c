@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"database/sql"
 
@@ -10,6 +11,12 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 )
+
+type EventLog struct {
+	At    time.Time
+	Name  string
+	Value string
+}
 
 func main() {
 	dataSourceName := os.Getenv("HAKARU_DATASOURCENAME")
@@ -23,13 +30,32 @@ func main() {
 	}
 	defer db.Close()
 
+	resc := make(chan EventLog)
+
+	go func(resc chan EventLog) {
+		eventLogs := make([]EventLog, 10)
+
+		for eventLog := range resc {
+			eventLogs = append(eventLogs, eventLog)
+
+			if len(eventLogs) >= 10 {
+				_, e := db.Exec("INSERT INTO eventlog(at, name, value) values ?", eventLogs)
+				if e != nil {
+					panic(e.Error())
+				}
+				eventLogs = make([]EventLog, 10)
+			}
+		}
+	}(resc)
+
 	hakaruHandler := func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("name")
 		value := r.URL.Query().Get("value")
 
-		_, e := db.Exec("INSERT INTO eventlog(at, name, value) values(NOW(), ?, ?)", name, value)
-		if e != nil {
-			panic(e.Error())
+		resc <- EventLog{
+			At:    time.Now(),
+			Name:  name,
+			Value: value,
 		}
 
 		origin := r.Header.Get("Origin")
