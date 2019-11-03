@@ -47,3 +47,32 @@ $ make
 
 1. 既にEC2インスタンスを起動していること
 1. インスタンス上でユーザデータ ./user_data.sh の内容を実行する
+
+## よくやるオペレーション
+
+#### デプロイ！
+
+ローカルのhakaruで
+
+```
+make upload
+```
+
+AWS システムマネージャーのセッションマネージャーでhakaruに入る。
+
+```
+sudo su
+cd /root/hakaru
+make deploy ARTIFACTS_COMMIT=latest
+```
+
+#### 負荷書ける
+
+AWS システムマネージャーのセッションマネージャーでkakeruに入る。
+シナリオを変えるのを忘れずに
+
+```
+sudo su
+cd /opt/hakeru
+make -C app kakeru upload HOST=hakaru-1043865531.ap-northeast-1.elb.amazonaws.com SCENARIO=2
+```
