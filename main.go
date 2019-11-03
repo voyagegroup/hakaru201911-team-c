@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"database/sql"
@@ -39,7 +41,17 @@ func main() {
 			eventLogs = append(eventLogs, eventLog)
 
 			if len(eventLogs) >= 10 {
-				_, e := db.Exec("INSERT INTO eventlog(at, name, value) values ?", eventLogs)
+
+				valueStrings := make([]string, 0, len(eventLogs))
+				valueArgs := make([]interface{}, 0, len(eventLogs)*3)
+				for _, eventLog := range eventLogs {
+					valueStrings = append(valueStrings, "(?, ?, ?)")
+					valueArgs = append(valueArgs, eventLog.At)
+					valueArgs = append(valueArgs, eventLog.Name)
+					valueArgs = append(valueArgs, eventLog.Value)
+				}
+				stmt := fmt.Sprintf("INSERT INTO eventlog(at, name, value) VALUES %s", strings.Join(valueStrings, ","))
+				_, e := db.Exec(stmt, valueArgs...)
 				if e != nil {
 					panic(e.Error())
 				}
