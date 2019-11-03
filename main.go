@@ -46,7 +46,7 @@ func main() {
 
 				for _, eventLog := range eventLogs {
 					valueStrings = append(valueStrings, "(?, ?, ?)")
-					valueArgs = append(valueArgs, eventLog.At)
+					valueArgs = append(valueArgs, fmt.Sprintf("%s", eventLog.At))
 					valueArgs = append(valueArgs, eventLog.Name)
 					valueArgs = append(valueArgs, eventLog.Value)
 				}
@@ -66,8 +66,12 @@ func main() {
 		name := r.URL.Query().Get("name")
 		value := r.URL.Query().Get("value")
 
+		jst, _ := time.LoadLocation("Asia/Tokyo")
+		now := time.Now().In(jst)
+		fmt.Println(now)
+
 		resc <- EventLog{
-			At:    time.Now(),
+			At:    now,
 			Name:  name,
 			Value: value,
 		}
