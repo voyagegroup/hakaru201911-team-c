@@ -22,6 +22,7 @@ func main() {
 		panic(err.Error())
 	}
 	defer db.Close()
+	db.SetMaxOpenConns(66)
 
 	hakaruHandler := func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("name")
