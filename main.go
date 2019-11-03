@@ -68,7 +68,6 @@ func main() {
 
 		jst, _ := time.LoadLocation("Asia/Tokyo")
 		now := time.Now().In(jst)
-		fmt.Println(now)
 
 		resc <- EventLog{
 			At:    now,
