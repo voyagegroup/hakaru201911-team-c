@@ -24,18 +24,13 @@ func main() {
 	defer db.Close()
 
 	hakaruHandler := func(w http.ResponseWriter, r *http.Request) {
-
-		stmt, e := db.Prepare("INSERT INTO eventlog(at, name, value) values(NOW(), ?, ?)")
-		if e != nil {
-			panic(e.Error())
-		}
-
-		defer stmt.Close()
-
 		name := r.URL.Query().Get("name")
 		value := r.URL.Query().Get("value")
 
-		_, _ = stmt.Exec(name, value)
+		_, e := db.Exec("INSERT INTO eventlog(at, name, value) values(NOW(), ?, ?)", name, value)
+		if e != nil {
+			panic(e.Error())
+		}
 
 		origin := r.Header.Get("Origin")
 		if origin != "" {
