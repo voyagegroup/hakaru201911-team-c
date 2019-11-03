@@ -27,10 +27,12 @@ func main() {
 		name := r.URL.Query().Get("name")
 		value := r.URL.Query().Get("value")
 
-		_, e := db.Exec("INSERT INTO eventlog(at, name, value) values(NOW(), ?, ?)", name, value)
-		if e != nil {
-			panic(e.Error())
-		}
+		go func() {
+			_, e := db.Exec("INSERT INTO eventlog(at, name, value) values(NOW(), ?, ?)", name, value)
+			if e != nil {
+				panic(e.Error())
+			}
+		}()
 
 		origin := r.Header.Get("Origin")
 		if origin != "" {
