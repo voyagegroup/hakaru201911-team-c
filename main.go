@@ -33,7 +33,7 @@ func main() {
 	resc := make(chan EventLog)
 
 	go func(resc chan EventLog) {
-		eventLogs := make([]EventLog, 10)
+		eventLogs := make([]EventLog, 0, 10)
 
 		for eventLog := range resc {
 			eventLogs = append(eventLogs, eventLog)
@@ -43,7 +43,7 @@ func main() {
 				if e != nil {
 					panic(e.Error())
 				}
-				eventLogs = make([]EventLog, 10)
+				eventLogs = make([]EventLog, 0, 10)
 			}
 		}
 	}(resc)
