@@ -62,11 +62,16 @@ func main() {
 		}
 	}(resc)
 
+	jst, e := time.LoadLocation("Asia/Tokyo")
+
+	if e != nil {
+		panic(e.Error())
+	}
+
 	hakaruHandler := func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("name")
 		value := r.URL.Query().Get("value")
 
-		jst, _ := time.LoadLocation("Asia/Tokyo")
 		now := time.Now().In(jst)
 
 		resc <- EventLog{
