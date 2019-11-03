@@ -11,6 +11,7 @@ import (
 
 	"os"
 
+	"github.com/carlescere/scheduler"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -18,6 +19,38 @@ type EventLog struct {
 	At    time.Time
 	Name  string
 	Value string
+}
+
+func insert(resc chan EventLog, db *sql.DB) {
+	valueStrings := []string{}
+	valueArgs := [](interface{}){}
+
+LOOP:
+	for {
+		select {
+		case eventLog, ok := <-resc:
+			if ok {
+				valueStrings = append(valueStrings, "(?, ?, ?)")
+				valueArgs = append(valueArgs, eventLog.At)
+				valueArgs = append(valueArgs, eventLog.Name)
+				valueArgs = append(valueArgs, eventLog.Value)
+			} else {
+				panic("resc is closed!!!")
+			}
+		default:
+			break LOOP
+		}
+	}
+
+	if len(valueStrings) == 0 {
+		return
+	}
+
+	stmt := fmt.Sprintf("INSERT INTO eventlog(at, name, value) VALUES %s", strings.Join(valueStrings, ","))
+	_, e := db.Exec(stmt, valueArgs...)
+	if e != nil {
+		panic(e.Error())
+	}
 }
 
 func main() {
@@ -34,33 +67,12 @@ func main() {
 
 	resc := make(chan EventLog)
 
-	go func(resc chan EventLog) {
-		eventLogs := make([]EventLog, 0, 10)
-
-		for eventLog := range resc {
-			eventLogs = append(eventLogs, eventLog)
-
-			if len(eventLogs) >= 10 {
-				valueStrings := make([]string, 0, len(eventLogs))
-				valueArgs := make([]interface{}, 0, len(eventLogs)*3)
-
-				for _, eventLog := range eventLogs {
-					valueStrings = append(valueStrings, "(?, ?, ?)")
-					valueArgs = append(valueArgs, fmt.Sprintf("%s", eventLog.At))
-					valueArgs = append(valueArgs, eventLog.Name)
-					valueArgs = append(valueArgs, eventLog.Value)
-				}
-
-				stmt := fmt.Sprintf("INSERT INTO eventlog(at, name, value) VALUES %s", strings.Join(valueStrings, ","))
-				_, e := db.Exec(stmt, valueArgs...)
-				if e != nil {
-					panic(e.Error())
-				}
-
-				eventLogs = make([]EventLog, 0, 10)
-			}
-		}
-	}(resc)
+	_, e := scheduler.Every(10).Seconds().NotImmediately().Run(func() {
+		insert(resc, db)
+	})
+	if e != nil {
+		panic(err.Error())
+	}
 
 	hakaruHandler := func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("name")
