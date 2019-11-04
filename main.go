@@ -21,7 +21,17 @@ type EventLog struct {
 	Value string
 }
 
+func insertChunk(valueStrings []string, valueArgs [](interface{}), db *sql.DB) {
+	stmt := fmt.Sprintf("INSERT INTO eventlog(at, name, value) VALUES %s", strings.Join(valueStrings, ","))
+	_, e := db.Exec(stmt, valueArgs...)
+	if e != nil {
+		panic(e.Error())
+	}
+}
+
 func insert(resc chan EventLog, db *sql.DB) {
+	const chunkSize = 1000
+
 	valueStrings := []string{}
 	valueArgs := [](interface{}){}
 
@@ -34,6 +44,11 @@ LOOP:
 				valueArgs = append(valueArgs, eventLog.At)
 				valueArgs = append(valueArgs, eventLog.Name)
 				valueArgs = append(valueArgs, eventLog.Value)
+				if len(valueStrings) == chunkSize {
+					insertChunk(valueStrings, valueArgs, db)
+					valueStrings = nil
+					valueArgs = nil
+				}
 			} else {
 				panic("resc is closed!!!")
 			}
@@ -46,11 +61,7 @@ LOOP:
 		return
 	}
 
-	stmt := fmt.Sprintf("INSERT INTO eventlog(at, name, value) VALUES %s", strings.Join(valueStrings, ","))
-	_, e := db.Exec(stmt, valueArgs...)
-	if e != nil {
-		panic(e.Error())
-	}
+	insertChunk(valueStrings, valueArgs, db)
 }
 
 func main() {
