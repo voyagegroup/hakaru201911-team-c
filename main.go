@@ -41,7 +41,7 @@ LOOP:
 		case eventLog, ok := <-resc:
 			if ok {
 				valueStrings = append(valueStrings, "(?, ?, ?)")
-				valueArgs = append(valueArgs, eventLog.At)
+				valueArgs = append(valueArgs, fmt.Sprintf("%s", eventLog.At))
 				valueArgs = append(valueArgs, eventLog.Name)
 				valueArgs = append(valueArgs, eventLog.Value)
 				if len(valueStrings) >= chunkSize {
