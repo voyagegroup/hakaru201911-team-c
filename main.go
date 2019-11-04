@@ -30,7 +30,7 @@ func insertChunk(valueStrings []string, valueArgs [](interface{}), db *sql.DB) {
 }
 
 func insert(resc chan EventLog, db *sql.DB) {
-	const chunkSize = 1000
+	const chunkSize = 20000
 
 	valueStrings := []string{}
 	valueArgs := [](interface{}){}
