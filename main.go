@@ -44,7 +44,7 @@ LOOP:
 				valueArgs = append(valueArgs, eventLog.At)
 				valueArgs = append(valueArgs, eventLog.Name)
 				valueArgs = append(valueArgs, eventLog.Value)
-				if len(valueStrings) == chunkSize {
+				if len(valueStrings) >= chunkSize {
 					insertChunk(valueStrings, valueArgs, db)
 					valueStrings = nil
 					valueArgs = nil
