@@ -65,11 +65,12 @@ func main() {
 	}
 	defer db.Close()
 
-	resc := make(chan EventLog)
+	resc := make(chan EventLog, 200000)
 
 	_, e := scheduler.Every(10).Seconds().NotImmediately().Run(func() {
 		insert(resc, db)
 	})
+
 	if e != nil {
 		panic(err.Error())
 	}
