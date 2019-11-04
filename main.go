@@ -1,15 +1,68 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 
 	"database/sql"
 
 	"os"
 
+	"github.com/carlescere/scheduler"
 	_ "github.com/go-sql-driver/mysql"
 )
+
+type EventLog struct {
+	At    time.Time
+	Name  string
+	Value string
+}
+
+func insertChunk(valueStrings []string, valueArgs [](interface{}), db *sql.DB) {
+	stmt := fmt.Sprintf("INSERT INTO eventlog(at, name, value) VALUES %s", strings.Join(valueStrings, ","))
+	_, e := db.Exec(stmt, valueArgs...)
+	if e != nil {
+		panic(e.Error())
+	}
+}
+
+func insert(resc chan EventLog, db *sql.DB) {
+	const chunkSize = 1000
+
+	valueStrings := []string{}
+	valueArgs := [](interface{}){}
+
+LOOP:
+	for {
+		select {
+		case eventLog, ok := <-resc:
+			if ok {
+				valueStrings = append(valueStrings, "(?, ?, ?)")
+				valueArgs = append(valueArgs, fmt.Sprintf("%s", eventLog.At))
+				valueArgs = append(valueArgs, eventLog.Name)
+				valueArgs = append(valueArgs, eventLog.Value)
+				if len(valueStrings) >= chunkSize {
+					insertChunk(valueStrings, valueArgs, db)
+					valueStrings = nil
+					valueArgs = nil
+				}
+			} else {
+				panic("resc is closed!!!")
+			}
+		default:
+			break LOOP
+		}
+	}
+
+	if len(valueStrings) == 0 {
+		return
+	}
+
+	insertChunk(valueStrings, valueArgs, db)
+}
 
 func main() {
 	dataSourceName := os.Getenv("HAKARU_DATASOURCENAME")
@@ -24,13 +77,32 @@ func main() {
 	defer db.Close()
 	db.SetMaxOpenConns(66)
 
+	resc := make(chan EventLog, 200000)
+
+	_, e := scheduler.Every(10).Seconds().NotImmediately().Run(func() {
+		insert(resc, db)
+	})
+
+	if e != nil {
+		panic(err.Error())
+	}
+
+	jst, e := time.LoadLocation("Asia/Tokyo")
+
+	if e != nil {
+		panic(e.Error())
+	}
+
 	hakaruHandler := func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("name")
 		value := r.URL.Query().Get("value")
 
-		_, e := db.Exec("INSERT INTO eventlog(at, name, value) values(NOW(), ?, ?)", name, value)
-		if e != nil {
-			panic(e.Error())
+		now := time.Now().In(jst)
+
+		resc <- EventLog{
+			At:    now,
+			Name:  name,
+			Value: value,
 		}
 
 		origin := r.Header.Get("Origin")
