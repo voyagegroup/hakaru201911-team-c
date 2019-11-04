@@ -76,3 +76,7 @@ sudo su
 cd /opt/hakeru
 make -C app kakeru upload HOST=hakaru-1043865531.ap-northeast-1.elb.amazonaws.com SCENARIO=2
 ```
+
+## kakeruのマルチノードオペレーション
+
+https://github.com/voyagegroup/hakaru201911-team-c/issues/30
