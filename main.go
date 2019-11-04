@@ -75,7 +75,7 @@ func main() {
 		panic(err.Error())
 	}
 	defer db.Close()
-	db.SetMaxOpenConns(66)
+	db.SetMaxOpenConns(5)
 
 	resc := make(chan EventLog, 200000)
 
