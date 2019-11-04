@@ -76,3 +76,13 @@ sudo su
 cd /opt/hakeru
 make -C app kakeru upload HOST=hakaru-1043865531.ap-northeast-1.elb.amazonaws.com SCENARIO=2
 ```
+
+## マルチノードやりかた
+
+ssm で kakeru-worker にログインする(複数のworkerがあるがどれでも良い)
+```
+sudo su ubuntu
+cd /opt/kakeru
+make -C app kakeru/multinode HOST=hakaru-1043865531.ap-northeast-1.elb.amazonaws.com SCENARIO=2
+```
+
